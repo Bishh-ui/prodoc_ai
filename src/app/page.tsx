@@ -1,6 +1,6 @@
 "use client";
 import { useState, useEffect } from "react";
-import { patients } from "@/lib/data";
+import { Patient } from "@/lib/data";
 import { PatientCard } from "@/components/doctor/PatientCard";
 import { CopilotChat } from "@/components/doctor/CopilotChat";
 import { AnalyticsPanel } from "@/components/dashboard/AnalyticsPanel";
@@ -23,21 +23,57 @@ function LiveClock() {
 }
 
 export default function Home() {
-  const [selectedPatient, setSelectedPatient] = useState(patients[0]);
+  const [patients, setPatients] = useState<Patient[]>([]);
+  const [selectedPatient, setSelectedPatient] = useState<Patient | null>(null);
   const [view, setView] = useState<View>("dashboard");
   const [copilotOpen, setCopilotOpen] = useState(false);
   const [search, setSearch] = useState("");
   const [mounted, setMounted] = useState(false);
+  const [loadingPatients, setLoadingPatients] = useState(true);
 
   useEffect(() => { setMounted(true); }, []);
 
+  // Load patients from DB
+  useEffect(() => {
+    fetch("/api/patients")
+      .then((r) => r.json())
+      .then((d) => {
+        setPatients(d.patients ?? []);
+        if (d.patients?.length > 0) setSelectedPatient(d.patients[0]);
+      })
+      .catch(() => {
+        // Fallback to static data if DB not configured
+        import("@/lib/data").then((m) => {
+          setPatients(m.patients);
+          setSelectedPatient(m.patients[0]);
+        });
+      })
+      .finally(() => setLoadingPatients(false));
+  }, []);
+
   const criticalCount = patients.filter((p) => p.riskLevel === "critical").length;
-  const avgRisk = Math.round(patients.reduce((s, p) => s + p.riskScore, 0) / patients.length);
+  const avgRisk = patients.length > 0
+    ? Math.round(patients.reduce((s, p) => s + p.riskScore, 0) / patients.length)
+    : 0;
   const filtered = patients.filter(
     (p) =>
       p.name.toLowerCase().includes(search.toLowerCase()) ||
       p.condition.toLowerCase().includes(search.toLowerCase())
   );
+
+  if (loadingPatients) {
+    return (
+      <div style={{ minHeight: "100vh", background: "#020817", display: "flex", alignItems: "center", justifyContent: "center" }}>
+        <Background />
+        <div style={{ textAlign: "center", position: "relative", zIndex: 5 }}>
+          <div style={{ width: 48, height: 48, borderRadius: "50%", background: "linear-gradient(135deg, #6366f1, #06b6d4)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 22, color: "white", margin: "0 auto 16px" }} className="ping-slow">◈</div>
+          <p style={{ color: "#475569", fontSize: 13, letterSpacing: "0.1em" }}>INITIALIZING NEURAL PLATFORM...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!selectedPatient) return null;
 
   const navItems: { id: View; label: string; icon: string }[] = [
     { id: "dashboard", label: "Dashboard", icon: "◉" },

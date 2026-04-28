@@ -1,6 +1,6 @@
 "use client";
-import { useState } from "react";
-import { workflowTasks, WorkflowTask } from "@/lib/data";
+import { useState, useEffect } from "react";
+import { WorkflowTask } from "@/lib/data";
 
 const typeConfig: Record<WorkflowTask["type"], { icon: string; color: string }> = {
   alert:      { icon: "⚠", color: "#ef4444" },
@@ -16,15 +16,42 @@ const priorityConfig: Record<WorkflowTask["priority"], { color: string; label: s
 };
 
 export function WorkflowPanel() {
-  const [tasks, setTasks] = useState(workflowTasks);
+  const [tasks, setTasks] = useState<WorkflowTask[]>([]);
   const [completing, setCompleting] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
 
-  function complete(id: string) {
+  useEffect(() => {
+    fetch("/api/tasks")
+      .then((r) => r.json())
+      .then((d) => setTasks(d.tasks ?? []))
+      .catch(() => import("@/lib/data").then((m) => setTasks(m.workflowTasks)))
+      .finally(() => setLoading(false));
+  }, []);
+
+  async function complete(id: string) {
     setCompleting(id);
-    setTimeout(() => { setTasks((t) => t.filter((task) => task.id !== id)); setCompleting(null); }, 500);
+    await fetch("/api/tasks", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ id }),
+    }).catch(() => {});
+    setTimeout(() => {
+      setTasks((t) => t.filter((task) => task.id !== id));
+      setCompleting(null);
+    }, 500);
   }
 
   const urgentCount = tasks.filter((t) => t.priority === "urgent").length;
+
+  if (loading) {
+    return (
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 320px", gap: 16 }}>
+        <div style={{ background: "rgba(5,13,31,0.85)", border: "1px solid rgba(99,102,241,0.15)", borderRadius: 18, padding: "40px", display: "flex", alignItems: "center", justifyContent: "center" }}>
+          <p style={{ color: "#334155", fontSize: 12, letterSpacing: "0.1em" }}>LOADING TASKS FROM DATABASE...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div style={{ display: "grid", gridTemplateColumns: "1fr 320px", gap: 16 }}>
