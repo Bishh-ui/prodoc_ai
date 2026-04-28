@@ -1,4 +1,4 @@
-import { supabaseAdmin } from "./supabase";
+import { getSupabaseAdmin } from "./supabase";
 import type { Patient, WorkflowTask } from "./data";
 
 // ── Map DB row → app Patient type ─────────────────────────────────────────
@@ -41,7 +41,7 @@ function rowToTask(r: Record<string, unknown>): WorkflowTask {
 
 // ── Patients ───────────────────────────────────────────────────────────────
 export async function getPatients(): Promise<Patient[]> {
-  const { data, error } = await supabaseAdmin
+  const { data, error } = await getSupabaseAdmin()
     .from("patients")
     .select("*")
     .order("risk_score", { ascending: false });
@@ -50,7 +50,7 @@ export async function getPatients(): Promise<Patient[]> {
 }
 
 export async function getPatient(id: string): Promise<Patient | null> {
-  const { data, error } = await supabaseAdmin
+  const { data, error } = await getSupabaseAdmin()
     .from("patients")
     .select("*")
     .eq("id", id)
@@ -59,9 +59,8 @@ export async function getPatient(id: string): Promise<Patient | null> {
   return rowToPatient(data);
 }
 
-// ── Workflow Tasks ─────────────────────────────────────────────────────────
 export async function getTasks(): Promise<WorkflowTask[]> {
-  const { data, error } = await supabaseAdmin
+  const { data, error } = await getSupabaseAdmin()
     .from("workflow_tasks")
     .select("*")
     .eq("completed", false)
@@ -71,12 +70,11 @@ export async function getTasks(): Promise<WorkflowTask[]> {
 }
 
 export async function completeTask(id: string): Promise<void> {
-  await supabaseAdmin.from("workflow_tasks").update({ completed: true }).eq("id", id);
+  await getSupabaseAdmin().from("workflow_tasks").update({ completed: true }).eq("id", id);
 }
 
-// ── Chat History ───────────────────────────────────────────────────────────
 export async function getChatHistory(patientId: string) {
-  const { data } = await supabaseAdmin
+  const { data } = await getSupabaseAdmin()
     .from("chat_history")
     .select("role, content")
     .eq("patient_id", patientId)
@@ -86,5 +84,5 @@ export async function getChatHistory(patientId: string) {
 }
 
 export async function saveChatMessage(patientId: string, role: "user" | "assistant", content: string) {
-  await supabaseAdmin.from("chat_history").insert({ patient_id: patientId, role, content });
+  await getSupabaseAdmin().from("chat_history").insert({ patient_id: patientId, role, content });
 }

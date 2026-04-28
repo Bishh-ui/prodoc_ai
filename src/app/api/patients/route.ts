@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getPatients } from "@/lib/db";
-import { supabaseAdmin } from "@/lib/supabase";
+import { getSupabaseAdmin } from "@/lib/supabase";
 
 export async function GET() {
   try {
@@ -15,7 +15,8 @@ export async function GET() {
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const { error } = await supabaseAdmin.from("patients").insert({
+    const db = getSupabaseAdmin();
+    const { error } = await db.from("patients").insert({
       id: body.id,
       name: body.name,
       age: body.age,
@@ -67,7 +68,8 @@ export async function PATCH(req: NextRequest) {
     if (fields.trend !== undefined) update.trend = fields.trend;
     update.updated_at = new Date().toISOString();
 
-    const { error } = await supabaseAdmin.from("patients").update(update).eq("id", id);
+    const db = getSupabaseAdmin();
+    const { error } = await db.from("patients").update(update).eq("id", id);
     if (error) throw error;
     return NextResponse.json({ success: true });
   } catch (err: unknown) {
@@ -79,7 +81,8 @@ export async function PATCH(req: NextRequest) {
 export async function DELETE(req: NextRequest) {
   try {
     const { id } = await req.json();
-    const { error } = await supabaseAdmin.from("patients").delete().eq("id", id);
+    const db = getSupabaseAdmin();
+    const { error } = await db.from("patients").delete().eq("id", id);
     if (error) throw error;
     return NextResponse.json({ success: true });
   } catch (err: unknown) {
