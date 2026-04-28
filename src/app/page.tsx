@@ -175,6 +175,10 @@ export default function Home() {
             display: "flex", alignItems: "center", justifyContent: "center",
             fontSize: 10, color: "#818cf8", fontWeight: 700,
           }}>DR</div>
+
+          <a href="/admin" style={{ fontSize: 11, color: "#818cf8", textDecoration: "none", padding: "7px 14px", border: "1px solid rgba(99,102,241,0.2)", borderRadius: 10, fontWeight: 600, letterSpacing: "0.05em" }}>
+            Admin
+          </a>
         </div>
       </nav>
 
